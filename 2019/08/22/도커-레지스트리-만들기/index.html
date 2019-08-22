@@ -94,17 +94,20 @@
 
 
 
-  <meta name="description" content="hard_coder blog about IT">
-<meta name="keywords" content="python, hard_coder, developer">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Just Do IT">
-<meta property="og:url" content="https://hard-coders.github.io/index.html">
+  <meta name="description" content="읽기 전에아래의 조건을 만족한다고 진행합니다.  유닉스 계열 운영체제다. 도커가 설치되어 있다. docker-compose도 설치되어 있다. 도메인의 소유자다. 서버로 nginx를 사용한다.  도커 레지스트리, 왜 필요한가도커의 강점 중 하나는 다른 사람이 만들어놓은 이미지를 도커 허브에서 언제든지 받을수 있다는 점입니다. 그런데 도커 허브는 퍼블릭 저장소">
+<meta name="keywords" content="docker, registry, private, letsencrypt, cerbot, ssl, https, nginx">
+<meta property="og:type" content="article">
+<meta property="og:title" content="도커 레지스트리 만들기">
+<meta property="og:url" content="https://hard-coders.github.io/2019/08/22/도커-레지스트리-만들기/index.html">
 <meta property="og:site_name" content="Just Do IT">
-<meta property="og:description" content="hard_coder blog about IT">
+<meta property="og:description" content="읽기 전에아래의 조건을 만족한다고 진행합니다.  유닉스 계열 운영체제다. 도커가 설치되어 있다. docker-compose도 설치되어 있다. 도메인의 소유자다. 서버로 nginx를 사용한다.  도커 레지스트리, 왜 필요한가도커의 강점 중 하나는 다른 사람이 만들어놓은 이미지를 도커 허브에서 언제든지 받을수 있다는 점입니다. 그런데 도커 허브는 퍼블릭 저장소">
 <meta property="og:locale" content="ko">
+<meta property="og:image" content="https://docs.docker.com/v17.09/engine/userguide/storagedriver/images/shared-volume.jpg">
+<meta property="og:updated_time" content="2019-08-22T06:06:38.813Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Just Do IT">
-<meta name="twitter:description" content="hard_coder blog about IT">
+<meta name="twitter:title" content="도커 레지스트리 만들기">
+<meta name="twitter:description" content="읽기 전에아래의 조건을 만족한다고 진행합니다.  유닉스 계열 운영체제다. 도커가 설치되어 있다. docker-compose도 설치되어 있다. 도메인의 소유자다. 서버로 nginx를 사용한다.  도커 레지스트리, 왜 필요한가도커의 강점 중 하나는 다른 사람이 만들어놓은 이미지를 도커 허브에서 언제든지 받을수 있다는 점입니다. 그런데 도커 허브는 퍼블릭 저장소">
+<meta name="twitter:image" content="https://docs.docker.com/v17.09/engine/userguide/storagedriver/images/shared-volume.jpg">
 
 
 
@@ -112,7 +115,7 @@
 
   
   
-  <link rel="canonical" href="https://hard-coders.github.io/">
+  <link rel="canonical" href="https://hard-coders.github.io/2019/08/22/도커-레지스트리-만들기/">
 
 
 
@@ -122,7 +125,7 @@
   };
 </script>
 
-  <title>Just Do IT</title>
+  <title>도커 레지스트리 만들기 | Just Do IT</title>
   
 
 
@@ -170,8 +173,7 @@
     
   
 
-  <div class="container sidebar-position-left 
-  page-home">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -213,7 +215,7 @@
         
         
           
-          <li class="menu-item menu-item-home menu-item-active">
+          <li class="menu-item menu-item-home">
 
     
     
@@ -269,9 +271,9 @@
           
           <div id="content" class="content">
             
-  <section id="posts" class="posts-expand">
+
+  <div id="posts" class="posts-expand">
     
-      
 
   
 
@@ -303,10 +305,8 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/2019/08/22/도커-레지스트리-만들기/" class="post-title-link" itemprop="url">도커 레지스트리 만들기</a>
+          <h1 class="post-title" itemprop="name headline">도커 레지스트리 만들기
+
               
             
           </h1>
@@ -375,9 +375,7 @@
       
 
       
-        
-          
-            <h2 id="읽기-전에"><a href="#읽기-전에" class="headerlink" title="읽기 전에"></a>읽기 전에</h2><p>아래의 조건을 만족한다고 진행합니다.</p>
+        <h2 id="읽기-전에"><a href="#읽기-전에" class="headerlink" title="읽기 전에"></a>읽기 전에</h2><p>아래의 조건을 만족한다고 진행합니다.</p>
 <ul>
 <li>유닉스 계열 운영체제다.</li>
 <li>도커가 설치되어 있다.</li>
@@ -475,13 +473,13 @@
 <li><a href="https://gitlab.com/gitlab-org/gitlab-ce/blob/master/lib/support/nginx/registry-ssl" target="_blank" rel="noopener">https://gitlab.com/gitlab-org/gitlab-ce/blob/master/lib/support/nginx/registry-ssl</a></li>
 </ul>
 
-          
-        
       
     </div>
 
     
 
+    
+      
     
 
     
@@ -499,14 +497,39 @@
 
     <footer class="post-footer">
       
-
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/tags/docker-registry-private-letsencrypt-cerbot-ssl-https-nginx/" rel="tag"># docker, registry, private, letsencrypt, cerbot, ssl, https, nginx</a>
+          
+        </div>
       
 
       
+      
+      
 
       
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/25/KVM-쿠버네티스-시작하기/" rel="next" title="KVM & 쿠버네티스 시작하기">
+                <i class="fa fa-chevron-left"></i> KVM & 쿠버네티스 시작하기
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
       
-        <div class="post-eof"></div>
+
+      
       
     </footer>
   </div>
@@ -516,18 +539,15 @@
   </article>
 
 
-    
-  </section>
-
-  
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="다음 페이지"></i></a>
-  </nav>
-
+  </div>
 
 
           </div>
           
+
+  
+
+
 
         </div>
         
@@ -547,8 +567,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            목차
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            흝어보기
+          </li>
+        </ul>
+      
 
-      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <div class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -607,6 +636,23 @@
         </div>
       </div>
 
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#읽기-전에"><span class="nav-number">1.</span> <span class="nav-text">읽기 전에</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#도커-레지스트리-왜-필요한가"><span class="nav-number">2.</span> <span class="nav-text">도커 레지스트리, 왜 필요한가</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Let’s-get-Let’s-Encrypt-SSL-Certificates"><span class="nav-number">3.</span> <span class="nav-text">Let’s get Let’s Encrypt SSL Certificates</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#인증서-발급-트러블슈팅"><span class="nav-number">3.1.</span> <span class="nav-text">인증서 발급 트러블슈팅</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#이미-사용중인-포트-사용"><span class="nav-number">3.1.1.</span> <span class="nav-text">이미 사용중인 포트 사용</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#서브도메인-미등록"><span class="nav-number">3.1.2.</span> <span class="nav-text">서브도메인 미등록</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSL-적용하기"><span class="nav-number">4.</span> <span class="nav-text">SSL 적용하기</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#드디어-레지스트리-만들기"><span class="nav-number">5.</span> <span class="nav-text">드디어 레지스트리 만들기</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#레지스트리-접근-제어하기"><span class="nav-number">6.</span> <span class="nav-text">레지스트리 접근 제어하기</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#레지스트리-사용하기"><span class="nav-number">7.</span> <span class="nav-text">레지스트리 사용하기</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#푸쉬하기"><span class="nav-number">7.1.</span> <span class="nav-text">푸쉬하기</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#풀-받기"><span class="nav-number">7.2.</span> <span class="nav-text">풀 받기</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#결론"><span class="nav-number">8.</span> <span class="nav-text">결론</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#참고"><span class="nav-number">9.</span> <span class="nav-text">참고</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
       
 
       
@@ -739,6 +785,10 @@
 
 
   
+  <script src="/js/scrollspy.js?v=7.2.0"></script>
+<script src="/js/post-details.js?v=7.2.0"></script>
+
+
 
   <script src="/js/next-boot.js?v=7.2.0"></script>
 
@@ -752,6 +802,8 @@
 
   
 
+
+  
 
 
   
