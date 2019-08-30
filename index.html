@@ -201,7 +201,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://hard-coders.github.io/2019/08/22/도커-레지스트리-만들기/" data-id="cjzxfeg0v0007ujwmtq6teg4u"
+      <a data-url="https://hard-coders.github.io/2019/08/22/도커-레지스트리-만들기/" data-id="cjzxhauqw0007hlwmu5z018ky"
          class="article-share-link">Share</a>
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker-registry-private-letsencrypt-cerbot-ssl-https-nginx/">docker, registry, private, letsencrypt, cerbot, ssl, https, nginx</a></li></ul>
@@ -219,14 +219,428 @@
 
 
       
-  </article>
+        
+
+<article id="post-KVM-쿠버네티스-시작하기" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h2 itemprop="name">
+      <a class="article-title" href="/2019/07/25/KVM-쿠버네티스-시작하기/">KVM &amp; 쿠버네티스 시작하기</a>
+    </h2>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/07/25/KVM-쿠버네티스-시작하기/" class="article-date">
+  <time datetime="2019-07-25T05:22:38.000Z" itemprop="datePublished">2019-07-25</time>
+</a>
+        
+      </div>
+    
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>이 글은 <a href="https://blog.alexellis.io/kvm-kubernetes-primer/" target="_blank" rel="noopener">Get started with KVM &amp; Kubernets</a>를 번역한 포스트입니다.</p>
+<hr>
+<p>이 포스트는 리눅스의 가상화 방식인 KVM을 소개합니다. 이 세상에는 상용급(production-grade) 실험실, 데이터 센터, 사설 클라우드를 구축하는데 사용할 수있는 다양한 도구가 있습니다. 툴링, 서비스, 지원은 제품이 엔터프라이즈, 소규모 비즈니스 또는 오픈 소스를 대상으로 하는지 여부에 따라 달라지죠.</p>
+<p>물론 이외에도 다른 하이퍼바이저나 가상머신 소프트웨어가 있습니다. 마이크로소프트의 HyperV, VMWare의 VSphere/ESXi, bhyve(FreeNAS/BSD 적용) 그리고 방금 말한 bhyve 기반으로 하는 도커의 hyperkit이 있습니다.</p>
+<p>이 포스트는 학습 및 탐험을 고무코자 KVM을 사용하여 집에서 가상머신(이하 VM) 클러스트러를 만드는 방법에 촛점을 둡니다. 우리는 우분투 리눅스를 이용해 KVM 가상머신 2개를 세팅하고, 쿠버네티스를 설치한뒤 OpenFaaS를 쿠버네티스 꼭대기에서 실행할 겁니다.</p>
+<h2 id="소개"><a href="#소개" class="headerlink" title="소개"></a>소개</h2><p>KVM은 <a href="https://ko.wikipedia.org/wiki/%EC%BB%A4%EB%84%90_%EA%B8%B0%EB%B0%98_%EA%B0%80%EC%83%81_%EB%A8%B8%EC%8B%A0" target="_blank" rel="noopener">리눅스를 위한 하이퍼바이저</a>입니다. 이름이 같다고 <a href="https://ko.wikipedia.org/wiki/KVM_%EC%8A%A4%EC%9C%84%EC%B9%98" target="_blank" rel="noopener">keyboard, video and mouse</a> 멀티플렉서와 혼동하지 마세요. 도커의 대장(Captain)이며 오픈 소스 개발자로써, 매일 매일을 컨테이너 작업에 많은 시간을 할애했습니다. 가끔은 UI에서 클릭 몇 번으로 VM을 “클라우드”에 프로비저닝하거나 원격 API를 호출하지만, 어떤 하이퍼바이저가 사용되는지와 같은 세밀한 부분에 대해서는 거의 관심이 없습니다.</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/7/70/Kvmbanner-logo2_1.png" alt="kvm"></p>
+<p>우리는 이 포스트에서 우리만의 VM을 만들거고, 필요한 것들은 다음과 같습니다.</p>
+<ul>
+<li>가상화 가능한 호스트</li>
+<li>우분투 리눅스 16.04 LTS</li>
+<li>이더넷 연결</li>
+<li>8~16 GB 메모리</li>
+<li>100~500 GB의 여유 공간(추천사항)</li>
+</ul>
+<blockquote>
+<p>우분투 17.10 역시 KVM을 실행할 수 있지만 네트워크 설정이 바뀌었고 <a href="https://wiki.ubuntu.com/Netplan" target="_blank" rel="noopener"><code>netplan</code></a>을 사용합니다. 가이드를 따르는 가장 쉬운 방법은 호스트에 16.04를 설치하거나 사용하는 겁니다.</p>
+</blockquote>
+<h2 id="튜토리얼"><a href="#튜토리얼" class="headerlink" title="튜토리얼"></a>튜토리얼</h2><p>이 튜토리얼은 네 가지 파트로 나누어져 있습니다.</p>
+<ol>
+<li>KVM을 위한 호스트 설정</li>
+<li>신 2개 생성</li>
+<li>쿠버네티스 설치 및 애플리케이션 배포</li>
+<li>간단한 리뷰</li>
+</ol>
+<h3 id="1-0-kvm-CLI-컴포넌트-설치하기"><a href="#1-0-kvm-CLI-컴포넌트-설치하기" class="headerlink" title="1.0 kvm CLI 컴포넌트 설치하기"></a>1.0 <code>kvm</code> CLI 컴포넌트 설치하기</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install -qy \</span><br><span class="line">    qemu-kvm libvirt-bin virtinst bridge-utils cpu-checker</span><br></pre></td></tr></table></figure>
+
+<p><code>kvm-ok</code> 명령으로 <code>kvm</code>이 작동하는지 확인하세요. 이 명령은 <code>/dev/kvm</code>에 있는 새 장치를 확인합니다.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ kvm-ok</span><br><span class="line">INFO: /dev/kvm exists</span><br><span class="line">KVM acceleration can be used</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-호스트-네트워킹"><a href="#1-1-호스트-네트워킹" class="headerlink" title="1.1 호스트 네트워킹"></a>1.1 호스트 네트워킹</h3><p>기본적으로 KVM은 호스트의 네트워킹에 NAT를 사용합니다. 이는 인터넷에 접속할 수는 있지만 다른 네트워크로 쉽게 액세스 할 수 없음을 뜻합니다. 때문에 우리는 브릿지를 통해 네트워킹을 변경하는데 필요한 서비스에 엑세스할 수 있는 클러스터를 만들어야 합니다.</p>
+<blockquote>
+<p>만약 VirtualBox 또는 VMWare Fusion을 사용 한적이 있는 경우 VM 네트워킹을 위한 브릿지나 NAT라는 용어에 친숙할 겁니다. 브릿지 네트워킹은 VM이 네트워크에 직접 연결되어 있는 것처럼 작동하며 라우터에서 DHCP IP 주소를 가져옵니다.</p>
+</blockquote>
+<p>역주) <a href="https://en.wikipedia.org/wiki/Bridging_(networking)" target="_blank" rel="noopener">Bridging</a> 참고</p>
+<p>이제부터 사용자급(consumer-grade) 라우터가 있는 홈 네트워크를 사용하고 <code>192.168.0.0/24</code> 서브넷으로 작업한다고 가정하겠습니다. 필요한 경우 IP를 바꾸세요.</p>
+<ul>
+<li>이제 호스트의 <code>브릿지</code> 인터페이스를 세팅합니다</li>
+</ul>
+<p><code>ifconfig</code>에 나오는 이더넷 어댑터 <code>eno1</code>을 바꿉시다.</p>
+<p><code>/etc/network/interfaces</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"># The primary network interface</span><br><span class="line">#auto eno1</span><br><span class="line">#iface eno1 inet dhcp</span><br><span class="line"></span><br><span class="line">auto br0</span><br><span class="line">iface br0 inet dhcp</span><br><span class="line">        bridge_ports eno1</span><br><span class="line">        bridge_stp off</span><br><span class="line">        bridge_fd 0</span><br><span class="line">        bridge_maxwait 0</span><br></pre></td></tr></table></figure>
+
+<p>KVM 호스트를 위해 동적 IP를 세팅했지만, 정적 IP로 세팅해도 됩니다.</p>
+<ul>
+<li>IP 포워딩과 브릿지 설정을 세팅합니다.</li>
+</ul>
+<p><code>/etc/sysctl.conf</code>를 수정하고 다음을 이어서 작성합니다:</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">net.bridge.bridge-nf-call-ip6tables</span> = <span class="number">0</span></span><br><span class="line"><span class="attr">net.bridge.bridge-nf-call-iptables</span> = <span class="number">0</span></span><br><span class="line"><span class="attr">net.bridge.bridge-nf-call-arptables</span> = <span class="number">0</span></span><br><span class="line"><span class="attr">net.ipv4.ip_forward</span> = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>VM을 재시작합니다.</p>
+<p><code>ifconfig</code>에서 <code>br0</code> 장치가 보여야 합니다. 이 장치는 IP 주소를 가지지만 <code>eno1</code>은 그렇지 않을겁니다.</p>
+<h3 id="1-2-CLI"><a href="#1-2-CLI" class="headerlink" title="1.2 CLI"></a>1.2 CLI</h3><p>설치과정에서 새로운 CLI가 추가 됩니다:</p>
+<ul>
+<li><code>virsh</code> - 관리를 위해 사용, <a href="https://en.wikipedia.org/wiki/Libvirt" target="_blank" rel="noopener">libvirt</a>를 이용해 VM 생성 및 상세보기</li>
+<li><code>virt-install</code> - 새 VM 부트스트랩 및 설치를 위해 사용</li>
+</ul>
+<p><code>virsh</code>는 모든 종류의 편리한 명령어가 있고 쉘 그자체로 동작할 수 있습니다. 가장 유용한 명령어는 실행 중이거나 정지한 VM을 보여주는 <code>virsh list --all</code> 입니다.</p>
+<ul>
+<li>VM 부팅 - <code>virsh start &lt;vm&gt;</code></li>
+<li>VM 정지 - <code>virsh shutdown &lt;vm&gt;</code></li>
+<li>VM 연기(suspend) - <code>virsh suspend &lt;vm&gt;</code></li>
+<li>VM 삭제 - <code>virsh destroy &lt;vm&gt;</code> 및 <code>virsh undefine &lt;vm&gt;</code></li>
+</ul>
+<p><a href="https://libvirt.org/sources/virshcmdref/html/" target="_blank" rel="noopener">여기</a>에서 사용가능한 virsh의 CLI 레퍼런스를 확인할 수 있습니다.</p>
+<h3 id="2-0-첫-VM-만들기"><a href="#2-0-첫-VM-만들기" class="headerlink" title="2.0 첫 VM 만들기"></a>2.0 첫 VM 만들기</h3><p><code>virt-installer</code> 명령으로 우분투 VM을 만들겁니다. 터미널 세션을 사용하는 경우 VNC 또는 원격 데스크톱 툴을 사용하면 안됩니다.</p>
+<p>인터넷으로 우분투 리눅스를 설치하기 때문에 ISO 이미지를 미리 준비하지 않아도 됩니다. 만약 오프라인으로 설치를 하고 싶으면 <code>--location</code> 대신 <code>--cdrom</code> 플래그를 추가하면 됩니다.</p>
+<p>다음과 같이 <code>create-vm.sh</code>를 저장합니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ -z <span class="string">"<span class="variable">$1</span>"</span> ] ;</span><br><span class="line"><span class="keyword">then</span></span><br><span class="line"> <span class="built_in">echo</span> Specify a virtual-machine name.</span><br><span class="line"> <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">sudo virt-install \</span><br><span class="line">--name <span class="variable">$1</span> \</span><br><span class="line">--ram 4096 \</span><br><span class="line">--disk path=/var/lib/libvirt/images/<span class="variable">$1</span>.img,size=30 \</span><br><span class="line">--vcpus 2 \</span><br><span class="line">--os-type linux \</span><br><span class="line">--os-variant ubuntu16.04 \</span><br><span class="line">--network bridge:br0,model=virtio \</span><br><span class="line">--graphics none \</span><br><span class="line">--console pty,target_type=serial \</span><br><span class="line">--location <span class="string">'http://gb.archive.ubuntu.com/ubuntu/dists/xenial/main/installer-amd64/'</span> \</span><br><span class="line">--extra-args <span class="string">'console=ttyS0,115200n8 serial'</span></span><br></pre></td></tr></table></figure>
+
+<p>원한다면 <code>ram</code>이나 <code>vcpus</code>와 같은 파라미터 값을 조정해도 됩니다. NAS나 외장 하드디스크가 있다면 NFS 마운트 포인트 역시 다른 경로로 설정해도 됩니다. <code>size=30</code> 파라미터는 <code>--disk</code>의 기가바이트를 상세설정합니다.</p>
+<p>우분투 Xenial 서버 에디션은 <code>--location</code> 플래그에서 선택됩니다.</p>
+<p>저는 이 시점에 <code>tmux</code>을 실행하는걸 좋아합니다. 이렇게 하면 접속을 끊고 다시 접속해도 되고, 여러개의 설치를 동시에 할 수 있기 때문입니다.</p>
+<p>스크립트에 실행권한을 주고 인자로 머신 이름을 넣어 실행하세요.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ chmod +x create-vm.sh</span><br><span class="line">$ ./create-vm.sh k8s-master</span><br></pre></td></tr></table></figure>
+
+<p>이제 아래에 있는 모든 지시사항을 따르세요.</p>
+<ul>
+<li>VM이 네트워크 주소를 가져와야 합니다.</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/02/dhcp.png" alt="instruction"></p>
+<ul>
+<li><code>Hostname</code>을 <code>k8s-master</code>로 합니다.</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/02/hostname.png" alt="instruction"></p>
+<ul>
+<li>유저 이름을 <code>ubuntu</code>로 합니다.</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/02/username.png" alt="instruction"></p>
+<ul>
+<li><code>OpenSSH server</code> 패키지를 선택합니다.(중요)</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/02/openssh.png" alt="instruction"></p>
+<ul>
+<li>인스톨러가 재부팅하게 둡니다.</li>
+</ul>
+<p><code>nmap</code> 명령으로 네트워크의 새 IP 주소를 스캔합니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo nmap -sP 192.168.0.0/24</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>노트: 여기서 <code>sudo</code>는 꼭 필요하므로 생략하지 마세요</p>
+</blockquote>
+<p>다음과 같이 <code>QEMU virtual NIC</code> 제조업체에 새 항목이 표시되어야 합니다.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Nmap scan report for 192.168.0.66</span><br><span class="line">Host is up (0.00049s latency).</span><br><span class="line">MAC Address: 52:54:00:07:79:AF (QEMU virtual NIC)</span><br></pre></td></tr></table></figure>
+
+<p>IP 주소와 설치과정에서 만든 사용자 정보를 이용해 <code>ssh</code>로 로그인합니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ ssh ubuntu@192.168.0.66</span><br><span class="line"></span><br><span class="line">Welcome to Ubuntu 17.10.1 LTS (GNU/Linux 4.4.0-112-generic x86_64)</span><br><span class="line"></span><br><span class="line"> * Documentation:  https://help.ubuntu.com</span><br><span class="line"> * Management:     https://landscape.canonical.com</span><br><span class="line"> * Support:        https://ubuntu.com/advantage</span><br><span class="line">Last login: Fri Feb  9 21:39:27 2018 from 192.168.0.22</span><br><span class="line"></span><br><span class="line">ubuntu@k8s-master:~$</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>쿠버네티스는 스왑 공간을 끄도록 요구합니다.</li>
+</ul>
+<p><code>/etc/fstab</code>을 수정합니다:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># swap was on /dev/vda5 during installation</span><br><span class="line"># UUID=a5f1c243-37a7-440c-88e0-d0fe71f05ce7 none            swap    sw              0       0</span><br></pre></td></tr></table></figure>
+
+<p>위와 같이 <code>swap</code>하는 행을 주석처리 합니다.</p>
+<ul>
+<li>선택사항 - 고정 IP 설정</li>
+</ul>
+<p><code>/etc/network/interfaces</code>를 수정해서 VM의 고정 IP를 선택적으로 설정 할 수 있습니다. 설정한 IP와 홈 네트워크의 서브넷과 일치해야 합니다.</p>
+<blockquote>
+<p>IP 범위 <code>192.168.0.0/24</code>를 쓰는 경우 <code>192.168.0.200</code> 등과 같이<br>네트워크의 다른 장치에 할당하지 않을 IP 주소를 선택하세요</p>
+</blockquote>
+<ul>
+<li>원하는 추가 가능한 패키지 추가</li>
+</ul>
+<p>선택한 패키지에 따라 <code>apt install</code>을 통하여 <code>git</code>이나 <code>curl</code>과 같은 패키지를 설치하고 싶을수도 있습니다.</p>
+<p>이게 전부입니다. 이제 우리 네트워크에 자신의 IP 주소를 갖는 첫번째 가상머신이 생겼습니다.</p>
+<h3 id="2-1-다음-머신-만들기"><a href="#2-1-다음-머신-만들기" class="headerlink" title="2.1 다음 머신 만들기"></a>2.1 다음 머신 만들기</h3><p>머신의과 디스크 이미지의 이름은 매번 실행할때마다 유일하게 하는 것이 좋습니다. <code>--name</code>과 <code>--disk</code>를 통해 설정합니다.</p>
+<p>이제 우리가 만든 프로비저닝 스크립트를 <code>k8s-1</code> 또는 <code>k8s-2</code> 등과 같이 새 호스트 이름으로 실행합니다.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ./create-vm.sh k8s-1</span><br></pre></td></tr></table></figure>
+
+<p>인스톨러를 통해 <a href="###-2.0-첫-VM-만들기">2.0 첫 VM 만들기</a>에서와 같은 방식으로 실행한 다음 IP 주소를 찾아서 시스템이 시작되었는지 확인하세요. <code>sudo swapoff -a</code>를 실행하고 <code>/etc/fstab</code>을 편집하세요. 이 지침사항은 생략하지 마세요.</p>
+<h3 id="3-0-쿠버네티스-컴포넌트-설치하기"><a href="#3-0-쿠버네티스-컴포넌트-설치하기" class="headerlink" title="3.0 쿠버네티스 컴포넌트 설치하기"></a>3.0 쿠버네티스 컴포넌트 설치하기</h3><p>이제 두 가지 선택사항이 있습니다. 저의 “인스턴트 가이드”를 따르거나 <code>kubeadm</code>을 경험했다면 아래 나열한 쉘 단계를 사용할 수 있습니다.</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Kubernetes_logo.svg/1024px-Kubernetes_logo.svg.png" alt="k8s"></p>
+<ul>
+<li>가이드:</li>
+</ul>
+<p>이제 제 가이드 <a href="https://blog.alexellis.io/your-instant-kubernetes-cluster/" target="_blank" rel="noopener">Your instant Kubernetes cluster</a>를 참고해 쿠버네티스를 설치합시다.</p>
+<p><code>kubeadm init</code> 단계에서는 마스터로, <code>kubeadm join</code> 단계에서는 워커로 <code>ssh</code> 합니다.</p>
+<ul>
+<li>가장 빠른 방법(쿠버네티스를 사용해본 경험이 있다면):</li>
+</ul>
+<p>아래를 입력해 컴포넌트를 설치힙나다.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ curl -sL https://gist.githubusercontent.com/alexellis/e8bbec45c75ea38da5547746c0ca4b0c/raw/23fc4cd13910eac646b13c4f8812bab3eeebab4c/configure.sh | sudo sh</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>마스터 초기화</li>
+</ul>
+<p>마스터에 로그인하고 <code>sudo kubeadm init</code>을 실행하는 방법에 대해서는 Kubernetes 가이드를 참조하세요:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ubuntu@k8s-master:~$ sudo kubeadm init</span><br></pre></td></tr></table></figure>
+
+<p>이제 Weaveworks 네트워크를 적용합니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kubectl apply -f <span class="string">"https://cloud.weave.works/k8s/net?k8s-version=<span class="variable">$(kubectl version | base64 | tr -d '\n')</span>"</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>첫 워커 노드 조인하기</li>
+</ul>
+<p>워커에 로그인하고 <code>sudo kubeadm join</code>을 이용해 클러스터에 조인하세요.</p>
+<blockquote>
+<p>노트: 좀 더 자세한 쿠버네티스 설정은 위에 링크한 가이드를 읽으세요</p>
+</blockquote>
+<h3 id="3-1-애플리케이션-배포하기"><a href="#3-1-애플리케이션-배포하기" class="headerlink" title="3.1 애플리케이션 배포하기"></a>3.1 애플리케이션 배포하기</h3><p>이제 OpenFaaS - Serverless Functions Made Simple 애플리케이션을 배포할 수 있습니다. OpenFaaS는 내장 UI 대시보드가 있고 사용하기 쉽습니다.</p>
+<p><img src="https://raw.githubusercontent.com/openfaas/media/master/OpenFaaS_logo_stacked_opaque.png" alt="openfass"></p>
+<p>마스터에서 아래를 실행합니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ apt install git</span><br><span class="line">$ git <span class="built_in">clone</span> https://github.com/openfaas/faas-netes &amp;&amp; <span class="built_in">cd</span> faas-netes \</span><br><span class="line">  &amp;&amp; kubectl apply -f namespaces.yml,./yaml</span><br></pre></td></tr></table></figure>
+
+<p>이제 워커 노드에서 예약되고(scheduled) 도커 허브에서 pull한 서비스가 생성되는 것을 감시할 수 있습니다:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ watch <span class="string">'kubectl get pods --all-namespaces'</span></span><br></pre></td></tr></table></figure>
+
+<p>You’re watching out for this on each line:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">READY     STATUS    RESTARTS</span><br><span class="line">1/1       Running   0</span><br></pre></td></tr></table></figure>
+
+<p>이제 OpenFaas Function Store에서 함수를 배포할수 있고, 브라우저에서 실행해 볼 수 있습니다. k8s-master 노드의 <code>31112</code> 포트를 열기만 하면 됩니다.</p>
+<p><a href="http://192.168.0.66:31112" target="_blank" rel="noopener">http://192.168.0.66:31112</a></p>
+<ul>
+<li>Function Store 아이콘을 클릭하세요:</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/01/Screen-Shot-2018-01-07-at-10.00.37.png" alt="func_store"></p>
+<ul>
+<li><em>Figlet</em> 함수를 선택하세요:</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/01/Screen-Shot-2018-01-07-at-10.00.51.png" alt="figlet"></p>
+<ul>
+<li>적당한 텍스트를 <em>Request body</em> 에 넣고 <em>Invoke</em> 를 눌러 <code>figlet</code> 아스키 로고가 생성되는걸 보세요</li>
+</ul>
+<p><img src="https://blog.alexellis.io/content/images/2018/01/Screen-Shot-2018-01-07-at-10.14.33.png" alt="ascii_figlet"></p>
+<h3 id="4-0-돌아보기-및-주의사항"><a href="#4-0-돌아보기-및-주의사항" class="headerlink" title="4.0 돌아보기 및 주의사항"></a>4.0 돌아보기 및 주의사항</h3><p>아래를 통해 우리가 한 것들을 되돌아봅시다.</p>
+<ul>
+<li>KVM과 CLI 툴 설치</li>
+<li>VM이 우리 라우터의 IP 주소를 가져오는 것을 허용코자 브릿지 인터페이스 생성</li>
+<li>우분투에서 VM 두 개 설치</li>
+<li><code>kubeadm</code>으로 쿠버네티스 클러스터 생성</li>
+<li>OpenFaaS 애플리케이션 배포</li>
+<li>서버리스 함수 실행</li>
+</ul>
+<p>여기까지는 그저 KVM 겉핥기일 뿐입니다. 이외의 할수 있는 일이 무궁무진하고, 우분투 뿐만 아니라 CentOS, SuSE 리눅스나 심지어 윈도우즈를 설치해서 사용할 수도 있습니다.</p>
+<p>여기 몇 가지 주의사항이 있습니다:</p>
+<ul>
+<li>우리는 마스터와 워커에서 동적 IP를 사용했습니다.</li>
+</ul>
+<p>VM을 재시작하거나 다시 켤 때, 새 IP 주소를 가지고 시작할겁니다. 이는 양 노드 모두 <code>kubeadm</code>을 다시 실행해야 함을 뜻합니다.</p>
+<ul>
+<li>우리는 인스톨러를 사용했습니다.</li>
+</ul>
+<p>첫 VM을 템플릿처럼 복제하지 않았던 것이 좀 의아할 수도 있습니다. 머신ID, 호스트 이름, ssh 호스트 키 등을 바꾸더라도 복제한 머신에서는 쿠버네티스가 제대로 동작하지 않는걸 발견했기 때문입니다. 여러분과는 다를수 있습니다. 심지어 <code>virt-sysprep</code>라는 복제한 리눅스 VM을 “제거” 하기 위한 전문 도구에서도 같은 이슈가 발생하는걸 확인했습니다.</p>
+<ul>
+<li>KVM VM을 관리하기 위한 다른 방법도 존재합니다.</li>
+</ul>
+<p>KVM을 UI로 관리할 수 있고 꽤나 유명한 방법입니다. 특히 VMWare의 vSphere/vCenter와 같은 작업에서 도구를 사용한적이 있다면 더 그렇습니다.</p>
+<p>우분투는 오라클 VirtualBox에서 사용하는 UI와 같은 경험을 선사해줄 수 있는 그래픽 도구  <a href="https://help.ubuntu.com/community/KVM/VirtManager" target="_blank" rel="noopener">virt-manager</a>를 제공합니다.</p>
+<p><img src="http://waste.mandragor.org/virt-manager-screenshot.png" alt="vmm"></p>
+<p>X11이나 VNC를 설치하고 싶지 않아서 경량(lean) 헤드리스 서버를 사용했습니다.</p>
+<p>역주) <a href="https://ko.wikipedia.org/wiki/X_%EC%9C%88%EB%8F%84_%EC%8B%9C%EC%8A%A4%ED%85%9C" target="_blank" rel="noopener">X11</a>, <a href="https://ko.wikipedia.org/wiki/VNC" target="_blank" rel="noopener">VNC</a> 참고</p>
+<p><a href="https://github.com/kimchi-project/kimchi" target="_blank" rel="noopener">Kimchi</a>는 모니터 연결, X11/VNC 설치 사이에 좋은 절충안이 될 수 있는 웹 UI입니다.<br><del>역주) 와..이런 코멘트 달지 않는 주의인데 김치에서 웃었습니다</del></p>
+<p><img src="https://github.com/kimchi-project/kimchi/raw/master/docs/kimchi-templates.png" alt="kimchi"></p>
+<ul>
+<li>라즈베리 파이에서도 돌아갈까요?</li>
+</ul>
+<p>제 생각에는 가능할것 같지만, 잘 알지도 못하고 저전력 장치에서 가상하는 것을 추천하고 싶지도 않습니다. 라즈베리 파이에서 다중 노드 클러스터를 만드는 방법은 아래에 링크를 달아놓았습니다.</p>
+<h2 id="Wrapping-up"><a href="#Wrapping-up" class="headerlink" title="Wrapping up"></a>Wrapping up</h2><p>In this blog post I set out to show you how to create and run a Kubernetes cluster on a single host and deploy an application. There are many ways to run Virtual Machines in your home-lab ranging from commercial solutions from VMware to built-in virtualization on Linux with KVM.</p>
+<p>If you need a cluster fast then public cloud is hard to beat - but for those of you who like to know how things work and to tinker with CLIs I hope this has been a good primer for KVM. Go and experiment and let me know what you’ve learnt on the blog comments or <a href="https://twitter.com/alexellisuk" target="_blank" rel="noopener">via Twitter @alexellisuk</a>.</p>
+<p>My related articles:</p>
+<ul>
+<li><a href="https://blog.alexellis.io/your-instant-kubernetes-cluster/" target="_blank" rel="noopener">Instant Kubenetes cluster</a></li>
+<li><a href="https://blog.alexellis.io/you-need-to-know-kubernetes-and-swarm/" target="_blank" rel="noopener">You need to know Docker Swarm vs Kubernetes</a></li>
+<li><a href="https://blog.alexellis.io/serverless-kubernetes-on-raspberry-pi/" target="_blank" rel="noopener">Kubernetes home-lab with your Raspberry Pis</a></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://hard-coders.github.io/2019/07/25/KVM-쿠버네티스-시작하기/" data-id="cjzxhaurc000ahlwm87ilspl1"
+         class="article-share-link">Share</a>
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kvm-vm-가상머신-쿠버네티스-kubernetes/">kvm, vm, 가상머신, 쿠버네티스, kubernetes</a></li></ul>
+
+    </footer>
+
+  </div>
+
   
 
   
-    <nav class="page-nav">
+
+</article>
+
+
+
       
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next page</a>
-    </nav>
+        
+
+<article id="post-post-testing" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h2 itemprop="name">
+      <a class="article-title" href="/2019/07/07/post-testing/">post testing</a>
+    </h2>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/07/07/post-testing/" class="article-date">
+  <time datetime="2019-07-07T12:28:52.000Z" itemprop="datePublished">2019-07-07</time>
+</a>
+        
+      </div>
+    
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://hard-coders.github.io/2019/07/07/post-testing/" data-id="cjzxhauqj0005hlwmcku8g25d"
+         class="article-share-link">Share</a>
+      
+    </footer>
+
+  </div>
+
+  
+
+  
+
+</article>
+
+
+
+      
+        
+
+<article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost" data-scroll-reveal>
+  
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h2 itemprop="name">
+      <a class="article-title" href="/2019/07/07/hello-world/">Hello World</a>
+    </h2>
+  
+  
+
+
+
+
+      </header>
+    
+
+    
+      <div class="article-meta">
+        <a href="/2019/07/07/hello-world/" class="article-date">
+  <time datetime="2019-07-07T12:27:19.206Z" itemprop="datePublished">2019-07-07</time>
+</a>
+        
+      </div>
+    
+
+    
+
+    <div class="article-entry" itemprop="articleBody">
+      
+
+
+      
+
+      
+        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="noopener">Deployment</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://hard-coders.github.io/2019/07/07/hello-world/" data-id="cjzxhauql0006hlwm07vw1w80"
+         class="article-share-link">Share</a>
+      
+    </footer>
+
+  </div>
+
+  
+
+  
+
+</article>
+
+
+
+      
+  </article>
+  
+
   
 </section>
 </div>
