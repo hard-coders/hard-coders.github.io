@@ -1,15 +1,41 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
-site_name: hard_coder blog
+site_name: hard_coded Tech Blog
 site_url: https://hard-coders.github.io
 theme:
   name: material
+  language: ko
+  palette:
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - scheme: default
+      primary: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  features:
+    - navigation.indexes
 
 plugins:
   - blog:
       blog_dir: .
+  - tags
 
 nav:
-  - index.md
+#  - Home: index.md
   - Blog:
-    - blog/index.md
+    - index.md
+    - leetcode
+      - index.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 
