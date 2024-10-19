@@ -9,3 +9,8 @@ venv/
 # python cache
 __pycache__/
 *.pyc
+
+# tmp files
+*.log
+*tmp.py
+*temp.py

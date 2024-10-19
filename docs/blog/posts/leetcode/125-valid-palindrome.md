@@ -13,7 +13,7 @@ tags:
 
 ## 문제
 
-리트코드 [125번 문제](https://leetcode.com/problems/valid-palindrome/description/)입니다.
+리트코드 [125번 문제](https://leetcode.com/problems/valid-palindrome/)입니다.
 
 문자열이 주어졌을 때, 이 문자열이 [회문(palindrome)](https://ko.wikipedia.org/wiki/%ED%9A%8C%EB%AC%B8)인지 확인하는 문제입니다. 
 대소문자를 구분하지 않으며, 영문자와 숫자만을 대상으로 합니다.
