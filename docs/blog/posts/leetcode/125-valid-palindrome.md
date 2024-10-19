@@ -18,6 +18,8 @@ tags:
 문자열이 주어졌을 때, 이 문자열이 [회문(palindrome)](https://ko.wikipedia.org/wiki/%ED%9A%8C%EB%AC%B8)인지 확인하는 문제입니다. 
 대소문자를 구분하지 않으며, 영문자와 숫자만을 대상으로 합니다.
 
+<!-- more -->
+
 문자열 `s`가 주어졌을 때, 회문이면 `true`를 그렇지 않으면 `false`를 반환해야 합니다.
 
 ## 풀이
@@ -33,7 +35,7 @@ class Solution:
 ```
 
 /// details | 테스트 코드
-    type: tip
+    type: success
     open: false
 
 ```python {linenums=1 hl_lines="3-6"}
@@ -59,3 +61,5 @@ def test_solution(s, expected):
     assert solution.isPalindrome(s) is expected
 ```
 ///
+
+시간 복잡도는 $O(n)$입니다.
