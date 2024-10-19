@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
-site_name: hard_coded Tech Blog
+site_name: hard_coder Blog
 site_url: https://hard-coders.github.io
 theme:
   name: material
@@ -20,15 +20,13 @@ theme:
 
 plugins:
   - blog:
-      blog_dir: .
+      blog_toc: true
   - tags
 
 nav:
-#  - Home: index.md
+  - Home: index.md
   - Blog:
-    - index.md
-    - leetcode
-      - index.md
+    - blog/index.md
 
 markdown_extensions:
   - pymdownx.superfences
