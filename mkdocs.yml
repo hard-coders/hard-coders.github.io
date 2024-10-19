@@ -21,7 +21,9 @@ theme:
 
 plugins:
   - blog:
-      blog_toc: true
+      blog_dir: blog
+  - search:
+      lang: ko
   - tags
 
 nav:

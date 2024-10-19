@@ -1,12 +1,12 @@
 ---
 date:
   created: 2024-10-13
+  updated: 2024-10-19
 categories:
-  - leetcode
+  - 리트코드
 tags:
-  - leetcode
-  - palindrome
-
+  - 리트코드
+  - 회문
 ---
 
 # 125. Valid Palindrome
@@ -63,3 +63,8 @@ def test_solution(s, expected):
 ///
 
 시간 복잡도는 $O(n)$입니다.
+
+/// tip | 속도 개선 팁
+문자열을 리스트로 변환하지 않고, 인덱스로 접근하여 비교하면 속도를 더 높일 수 있습니다.
+슬라이싱은 내부적으로 포인터를 이용하여 빠르게 처리하기 때문에 리스트를 다루는 문제에서는 슬라이싱을 사용하는 것이 좋습니다.
+///

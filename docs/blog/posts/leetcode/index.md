@@ -2,9 +2,9 @@
 date:
   created: 2024-10-10
 categories:
-  - leetcode
+  - 리트코드
 tags:
-  - leetcode
+  - 리트코드
 ---
 
 # 리트코드 풀이
