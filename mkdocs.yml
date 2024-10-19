@@ -31,11 +31,20 @@ nav:
       - index.md
 
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
   - pymdownx.superfences
-
+  - pymdownx.keys
+  - pymdownx.blocks.admonition:
+      types:
+      - note
+      - attention
+      - caution
+      - danger
+      - error
+      - tip
+      - hint
+      - warning
+      - info
+      - check
+  - pymdownx.blocks.details:
+  - pymdownx.blocks.tab:
+      alternate_style: True
