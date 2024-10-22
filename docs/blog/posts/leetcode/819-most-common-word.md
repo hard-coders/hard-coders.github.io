@@ -31,18 +31,54 @@ tags:
 3. `banned`에 포함되지 않은 단어만 필터링합니다.
 4. `collections.Counter`로 단어의 빈도수를 계산합니다.
 
-```python
-import re  # 리트코드 사이트에서는 불필요
-from collections import Counter  # 리트코드 사이트에서는 불필요
+/// tip | import 생략
+리트코드 사이트에서는 `re`와 `collections` 모듈을 import하지 않아도 됩니다.
+사이트 내에서는 보이지 않지만 이미 자주 쓰이는 모듈들이 포함되어 있기 때문입니다.
+///
 
+```python
 class Solution:
     def mostCommonWord(self, paragraph: str, banned: list[str]) -> str:
         words = [
-            word for word in re.findall(r"\w+", paragraph.lower()) if word not in banned
+            w for w in re.findall(r"\w+", paragraph.lower()) if w not in banned
         ]
         counter = Counter(words)
         return counter.most_common(1)[0][0]
 ```
+
+/// details | 테스트 코드
+    type: success
+    open: false
+
+```python {linenums=1 hl_lines="7-13"}
+import re  # 리트코드에서는 불필요
+from collections import Counter  # 리트코드에서 불필요
+
+import pytest
+
+
+class Solution:
+    def mostCommonWord(self, paragraph: str, banned: list[str]) -> str:
+        words = [
+            w for w in re.findall(r"\w+", paragraph.lower()) if w not in banned
+        ]
+        counter = Counter(words)
+        return counter.most_common(1)[0][0]
+
+
+@pytest.mark.parametrize(
+    "paragraph, banned, expected",
+    [
+        ("Bob hit a ball, the hit BALL flew far after it was hit.", ["hit"], "ball"),
+        ("a.", [], "a"),
+        ("Bob. hIt, baLl", ["bob", "hit"], "ball"),
+    ],
+)
+def test_solution(paragraph, banned, expected):
+    solution = Solution()
+    assert solution.mostCommonWord(paragraph, banned) == expected
+```
+///
 
 1~3번 과정은 한 줄로 처리할 수 있습니다. `collections.Counter`는 `most_common` 메서드를 통해 가장 빈번한 요소를 반환합니다.
 
@@ -50,10 +86,7 @@ class Solution:
 정규식 `r"\w+"`은 단어를 찾는 패턴입니다. `\w`는 단어 문자를 의미하며, `+`는 1회 이상 반복을 의미합니다.
 ///
 
-/// tip | import 생략
-리트코드 사이트에서는 `re`와 `collections` 모듈을 import하지 않아도 됩니다.
-사이트 내에서는 보이지 않지만 이미 자주 쓰이는 모듈들이 포함되어 있기 때문입니다.
-///
+
 
 ## 시간 복잡도
 
