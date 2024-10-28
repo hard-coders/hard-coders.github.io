@@ -8,7 +8,6 @@ tags:
   - 회문
   - 문자열
   - 부분 문자열
-draft: true
 ---
 
 # 5. Longest Palindrome Substring
@@ -23,31 +22,64 @@ draft: true
 
 ## 풀이
 
-투 포인터를 활용하여 회문을 찾습니다. 회문은 홀수와 짝수의 경우로 나누어 생각할 수 있습니다.
+투 포인터를 활용하여 회문을 찾습니다. 회문은 홀수(포인터1)와 짝수(포인터2)의 경우로 나누어 생각할 수 있습니다.
+회문을 찾는 함수는 해당 문자에서 왼쪽, 오른쪽으로 확장하는 함수를 만들면 됩니다. 아래 예시를 보면 이해가 조금 수월 할 겁니다.
+
+만약 `s`가 `babad`라면,
+
+* `i = 0`: `"b"abad`
+  > * 홀
+  >> * `[b]abad` ✅ 
+  > * 짝
+  >> * `[ba]bad` ❌
+* `i = 1`: `b"a"bad`
+  > * 홀
+  >> * `b[a]bad` ✅
+  >> * `[bab]ad` ✅ 정답입니다.
+  > * 짝
+  >> * `b[ab]ad` ❌
+* `i = 2`: `ba"b"ad`
+  > * 홀
+  >> * `ba[b]ad` ✅
+  >> * `b[aba]d` ✅ 역시 정답입니다.
+  >> * `[babad]` ❌
+  > * 짝
+  >> * `ba[ba]d` ❌
+* `i = 3`: `bab"a"d`
+  > * 홀
+  >> * `bab[a]d` ✅
+  >> * `ba[bad]` ❌
+  > * 짝
+  >> * `bab[ad]` ❌
+* `i = 4`: `baba"d"`: 짝수일 경우 오버플로우이므로 패스합니다.
+
+위 예에서는 `i`가 1일 때, `bab`와 2일 때, `aba` 가 가장 깁니다. 리트코드에서는 둘 모두 정답으로 처리합니다.
 
 1. 홀수, 짝수 길이의 회문을 찾습니다.
 2. 두 경우 중 가장 긴 회문을 반환합니다.
-3. 회문을 찾는 함수를 만들어 풀이합니다.
-4. 회문을 찾는 함수는 주어진 문자열과 시작, 끝 인덱스를 받아 회문을 찾습니다.
+3. 포인터를 오른쪽으로 이동합니다.
 
 
 ```python
 class Solution:
     def longestPalindrome(self, s: str) -> str:
+        # 한 글자는 자기 자신으로 회문입니다. 그리고 자기 자신을 뒤집은게 같다면 역시 회문입니다.
+        if len(s) < 2 or s == s[::-1]:
+            return s
+
         def expand(left: int, right: int) -> str:
             while left >= 0 and right < len(s) and s[left] == s[right]:
                 left -= 1
                 right += 1
             return s[left + 1 : right]
 
-        if len(s) < 2 or s == s[::-1]:
-            return s
-
         result = ""
         for i in range(len(s) - 1):
             result = max(result, expand(i, i + 1), expand(i, i + 2), key=len)
         return result
 ```
+
+`if` 문이 있는 이유는 최선, 최악의 경우 바로 정답을 알 수도 있지만, `expand` 함수에서 인덱스 오버플로우가 나지 않기 위함도 있습니다.
 
 /// details | 테스트 코드
     type: success
@@ -58,14 +90,14 @@ import pytest
 
 class Solution:
     def longestPalindrome(self, s: str) -> str:
+        if len(s) < 2 or s == s[::-1]:
+            return s
+
         def expand(left: int, right: int) -> str:
             while left >= 0 and right < len(s) and s[left] == s[right]:
                 left -= 1
                 right += 1
             return s[left + 1 : right]
-
-        if len(s) < 2 or s == s[::-1]:
-            return s
 
         result = ""
         for i in range(len(s) - 1):
@@ -85,14 +117,6 @@ def test_solution(s, expected):
     assert solution.longestPalindrome(s) == expected
 ```
 ///
-
-- `expand` 함수는 주어진 문자열과 시작, 끝 인덱스를 받아 회문을 찾습니다.
-- `s`의 길이가 2보다 작거나, `s`가 회문이라면 `s`를 반환합니다.
-- `result` 변수에 가장 긴 회문을 저장합니다.
-- `s`의 길이 - 1까지 반복하며, `expand` 함수를 호출하여 가장 긴 회문을 찾습니다.
-- `expand` 함수는 `i`와 `i + 1`, `i`와 `i + 2`를 비교하여 가장 긴 회문을 찾습니다.
-- `max` 함수를 이용해 가장 긴 회문을 찾습니다.
-- `key=len`을 이용해 길이가 가장 긴 회문을 반환합니다.
 
 ## 시간 복잡도
 
