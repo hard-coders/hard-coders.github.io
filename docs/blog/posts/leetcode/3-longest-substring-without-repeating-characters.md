@@ -82,12 +82,6 @@ class Solution:
         return max_len
 ```
 
-/// note
-문제풀이 할 때 투 포인터를 사용할 경우 `left`, `right`라는 변수명을 자주 사용합니다.
-손으로 그림을 그릴때도 명확해서 이해하기 쉽기 때문입니다.
-위에서는 `start`가 `left`이고 `i`가 `right`입니다. 서두의 그림을 보면서 대입해보면 정말 편합니다.
-///
-
 그런데 리트코드에 제출하면 다음 케이스에서 실패합니다.
 
 ```python
@@ -158,3 +152,36 @@ def test_solution(s, expected):
 ///
 
 시간 복잡도는 순차탐색만 했으므로 $O(n)$입니다.
+
+## 다른 풀이
+
+더 [직관적인 방법](https://leetcode.com/problems/longest-substring-without-repeating-characters/solutions/5111376/video-3-ways-to-solve-this-question-sliding-window-set-hashing-and-the-last-position/)도 있습니다.
+
+```python
+class Solution:
+    def lengthOfLongestSubstring(self, s: str) -> int:
+        left = max_len = 0
+        char_set = set()
+        
+        for right in range(len(s)):
+            while s[right] in char_set:
+                char_set.remove(s[left])
+                left += 1
+
+            char_set.add(s[right])
+            max_len = max(max_len, right - left + 1)
+        
+        return max_len
+```
+
+/// note | 참고
+문제풀이 할 때 투 포인터를 사용할 경우 `left`, `right`라는 변수명을 자주 사용합니다.
+손으로 그림을 그릴때도 명확해서 이해하기 쉽기 때문입니다.
+위에서는 `start`가 `left`이고 `i`가 `right`입니다. 서두의 그림을 보면서 대입해보면 정말 편합니다.
+///
+
+개념은 크게 다르지 않지만, 중복 문자열을 집합으로 다룹니다.
+부분 문자열을 구하는 문제가 아니기 때문에 순서가 상관없어 집합으로 처리하는 방법입니다.
+물론 리스트로 바꾸기만 해도 부분 문자열도 구할 수는 있습니다.
+
+역시 시간 복잡도는 $O(n)$입니다.
