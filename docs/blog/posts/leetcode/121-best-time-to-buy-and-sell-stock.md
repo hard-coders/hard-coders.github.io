@@ -8,7 +8,7 @@ tags:
   - 카데인
 ---
 
-# 121. Best Time to Buy and Sell Stock
+# 121. 주식을 사고 팔기 가장 좋은 때
 
 ## 문제
 

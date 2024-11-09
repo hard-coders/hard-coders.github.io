@@ -9,7 +9,7 @@ tags:
   - 회문
 ---
 
-# 125. Valid Palindrome
+# 125. 유효한 회문
 
 ## 문제
 

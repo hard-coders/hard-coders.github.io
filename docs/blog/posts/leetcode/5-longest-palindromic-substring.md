@@ -10,7 +10,7 @@ tags:
   - 부분 문자열
 ---
 
-# 5. Longest Palindrome Substring
+# 5. 가장 긴 회문 부분 문자열
 
 ## 문제
 
